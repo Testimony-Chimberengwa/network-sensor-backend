@@ -256,22 +256,26 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            cpu_percent = await asyncio.to_thread(psutil.cpu_percent, interval=0.5)
+            cpu_percent = await asyncio.to_thread(psutil.cpu_percent, interval=1)
             ram = await asyncio.to_thread(psutil.virtual_memory)
             network_io = get_network_io_delta()
             processes = get_processes()
             conns = get_connections()
             sites = get_sites()
+            open_ports = get_open_ports()
 
-            await websocket.send_json({
+            payload = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "cpu_percent": cpu_percent,
                 "ram_percent": ram.percent,
                 "network_io": network_io,
                 "processes": processes[:20],
                 "connections": conns[:30],
+                "open_ports": open_ports[:30],
                 "sites": sites,
-            })
+            }
+            print("[WS] Sending:", payload)
+            await websocket.send_json(payload)
             await asyncio.sleep(2)
     except WebSocketDisconnect:
         pass
